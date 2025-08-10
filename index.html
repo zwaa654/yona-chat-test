@@ -10,25 +10,17 @@
       --charcoal:#111827; --forest:#184A2C; --oak:#5C3A21;
       --bg:#0b0f14; --card:#ffffff; --line:#e8eaee; --text:#111827; --muted:#6b7280;
       --bubble:#111827; --bubbleText:#fff; --shadow:0 12px 30px rgba(0,0,0,.18);
-      --accent:#0f172a; --green:#22c55e; --alert:#ef4444;
+      --green:#22c55e; --alert:#ef4444;
     }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0; font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;
-      color:#e5e7eb; background:radial-gradient(1200px 800px at 70% 10%, rgba(24,74,44,.35), transparent 60%),
-                 radial-gradient(1000px 700px at 10% 90%, rgba(92,58,33,.25), transparent 60%),
-                 linear-gradient(180deg,#0b0f14,#0e141b);
-      position:relative;
-    }
-    /* Optional site screenshot background */
-    .bg {
-      position:fixed; inset:0; z-index:-2; background:#0e141b center/cover no-repeat;
-      filter:brightness(.42) blur(2px);
-    }
-    .bg.hidden{ display:none; }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{ margin:0; font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial; color:#e5e7eb; background:#0e141b; }
 
-    /* Top page bar (fake site header just for vibe) */
+    /* Background: uses your screenshots */
+    .bg{ position:fixed; inset:0; z-index:-2; background:center/cover no-repeat; filter:brightness(.42) blur(2px); }
+    @media (min-width:641px){ .bg{ background-image:url('bg-desktop.jpg'); } }
+    @media (max-width:640px){ .bg{ background-image:url('bg-mobile.jpg'); } }
+
+    /* Top bar to simulate site header */
     .pagebar{
       position:sticky; top:0; width:100%; display:flex; align-items:center; gap:10px;
       background:rgba(17,24,39,.65); backdrop-filter: blur(8px);
@@ -86,7 +78,7 @@
     button:disabled{ opacity:.6; cursor:not-allowed }
     .hint{ font-size:12px; color:#6b7280; padding:6px 2px 0 }
 
-    /* Mobile */
+    /* Mobile: full-screen chat; launcher centered */
     @media (max-width:640px){
       .yona-launcher{ left:50%; right:auto; transform:translateX(-50%); bottom:14px }
       .yona-chat{ right:0; left:0; bottom:0; top:0; width:100vw; height:100dvh; border-radius:0 }
@@ -94,14 +86,11 @@
   </style>
 </head>
 <body>
+  <div class="bg"></div>
 
-  <!-- Optional screenshot background. Upload bg.jpg to your repo root to enable. -->
-  <div class="bg hidden" id="bg"></div>
-
-  <!-- Fake site header so it feels like your page -->
+  <!-- Fake site header (logo optional; shows YONA text if logo not present) -->
   <div class="pagebar">
     <div class="brand">
-      <!-- Upload logo.png (Yona logo) to your repo root for the real mark -->
       <img id="logo" src="logo.png" alt="Yona" onerror="this.style.display='none';document.getElementById('brand-fallback').style.display='block'">
       <div class="fallback" id="brand-fallback" style="display:none">YONA</div>
     </div>
@@ -131,32 +120,19 @@
         <textarea id="input" placeholder="Type a message. Press Enter to send (Shift+Enter for new line)"></textarea>
         <button id="send" type="submit">Send</button>
       </form>
-      <div class="hint">Polling your Google Sheet (fast when open, slower in background).</div>
+      <div class="hint">AI replies via Apps Script (fast when open, slow poll in background).</div>
     </footer>
   </div>
 
   <script>
-    // ---------- Config ----------
+    // ---- Config: your Apps Script Web App URL ----
     const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbzIPcXu5kBNFElrRmm-tSHd0Y9Yy8Mny5cCJjnhT7cghY_hVP7o3ipfgYRTTDLtc_PAtw/exec";
-    const USE_BG_IMAGE = true;     // set true if you upload bg.jpg to repo
-    const BG_IMAGE_SRC = "bg.jpg"; // upload a screenshot named bg.jpg
-    // ----------------------------
-
-    // Try to enable background screenshot if present
-    (function tryBg(){
-      if (!USE_BG_IMAGE) return;
-      const img = new Image();
-      img.onload = () => document.getElementById('bg').style.backgroundImage = `url('${BG_IMAGE_SRC}')`,
-      img.onerror = () => document.getElementById('bg').classList.add('hidden');
-      img.src = BG_IMAGE_SRC;
-      document.getElementById('bg').classList.remove('hidden');
-    })();
 
     // Elements
     const launcher = document.getElementById('yona-launcher');
     const panel    = document.getElementById('yona-chat');
     const closeBtn = document.getElementById('yona-close');
-    const log      = document.getElementById('log');
+    const logEl    = document.getElementById('log');
     const form     = document.getElementById('form');
     const input    = document.getElementById('input');
 
@@ -168,15 +144,15 @@
       b.className = 'bubble';
       b.innerText = text;
       row.appendChild(b);
-      log.appendChild(row);
-      log.scrollTop = log.scrollHeight;
+      logEl.appendChild(row);
+      logEl.scrollTop = logEl.scrollHeight;
     }
     function addTyping(){
       const row = document.createElement('div');
       row.className = 'msg bot'; row.id = 'typing';
       const b = document.createElement('div'); b.className='bubble';
       b.innerHTML = '<span class="typing"><span></span><span></span><span></span></span>';
-      row.appendChild(b); log.appendChild(row); log.scrollTop = log.scrollHeight;
+      row.appendChild(b); logEl.appendChild(row); logEl.scrollTop = logEl.scrollHeight;
     }
     function removeTyping(){ const t=document.getElementById('typing'); if(t) t.remove(); }
 
@@ -194,7 +170,8 @@
     let unseen = 0;
 
     async function doPoll(){
-      if (inFlight || document.hidden) return; // slow timer still runs but we skip network if tab is actually hidden
+      // Skip network if tab hidden (slow timer still runs but returns early)
+      if (inFlight || document.hidden) return;
       try{
         inFlight = true;
         const res = await fetch(ENDPOINT_URL, { method:'POST', body: JSON.stringify({ poll:true, since:lastId }) });
@@ -205,11 +182,11 @@
           lastId = Math.max(lastId, m.id||0);
           const role = (m.who === 'user') ? 'me' : 'bot';
           addMsg(role, m.text || '');
-          if (!panel.classList.contains('open')) newOnes++;
+          if (!panel.classList.contains('open') && role === 'bot') newOnes++;
         }
         if (newOnes > 0){
           unseen += newOnes;
-          launcher.classList.add('unseen');
+          launcher.classList.add('unseen'); // red dot when closed
         }
         backoffMs = 0;
       }catch{ backoffMs = Math.min(backoffMs + 2000, 8000); }
@@ -219,7 +196,7 @@
     function startFastPolling(){ if(pollTimerFast) return; pollTimerFast = setInterval(()=>{ if(panel.classList.contains('open') && !document.hidden) doPoll(); }, 2000 + backoffMs); }
     function stopFastPolling(){ if(!pollTimerFast) return; clearInterval(pollTimerFast); pollTimerFast=null; }
 
-    // Slow background polling every 10s even if panel closed (so Sheet replies pop in)
+    // Slow background polling every 10s even if panel closed (so Sheet/manual replies appear)
     function startSlowPolling(){ if(pollTimerSlow) return; pollTimerSlow = setInterval(()=>{ if(!panel.classList.contains('open')) doPoll(); }, 10000); }
     function stopSlowPolling(){ if(!pollTimerSlow) return; clearInterval(pollTimerSlow); pollTimerSlow=null; }
 
@@ -229,7 +206,7 @@
       if (unseen>0){ unseen=0; launcher.classList.remove('unseen'); }
       if (!document.hidden) doPoll();
       startFastPolling();
-      input.focus();
+      setTimeout(()=> input.focus(), 50);
     }
     function closeChat(){ panel.classList.remove('open'); stopFastPolling(); }
 
@@ -238,7 +215,7 @@
 
     // Visibility control
     document.addEventListener('visibilitychange', ()=>{
-      if(document.hidden){ /* nothing; slow timer keeps running */ }
+      if(document.hidden){ /* slow timer keeps running */ }
       else { if(panel.classList.contains('open')){ doPoll(); startFastPolling(); } }
     });
     window.addEventListener('focus', ()=>{ if(panel.classList.contains('open')) startFastPolling(); });
@@ -260,13 +237,8 @@
       }
     });
 
-    // Boot: start slow background polling so Sheet-sent messages appear even if closed
+    // Boot: slow background polling so Sheet-sent replies appear even if closed
     startSlowPolling();
-
-    // Friendly greeting the first time you open
-    let greeted=false;
-    const greet = ()=>{ if(greeted) return; addMsg('bot','hey! this is the Yona proof-of-concept chat. messages are logged to your Google Sheet.'); greeted=true; };
-    launcher.addEventListener('click', greet);
   </script>
 </body>
 </html>
