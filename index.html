@@ -29,6 +29,12 @@
     .spacer{flex:1}
     .pill{color:#cbd5e1; font-size:12px; padding:6px 10px; border:1px solid rgba(255,255,255,.1); border-radius:999px}
 
+    .clearbtn{
+      margin-left:12px; font-size:12px; padding:6px 10px; border-radius:10px;
+      border:1px solid rgba(255,255,255,.2); background:transparent; color:#e5e7eb; cursor:pointer;
+    }
+    .clearbtn:hover{ background:rgba(255,255,255,.08) }
+
     .yona-launcher{
       position:fixed; right:18px; bottom:18px; z-index:9998;
       display:flex; align-items:center; gap:10px; background:var(--bubble); color:#fff;
@@ -89,6 +95,7 @@
     </div>
     <div class="spacer"></div>
     <div class="pill">Proof of concept</div>
+    <button class="clearbtn" id="clearHistoryBtn" title="Clear chat stored in Google Sheet">Clear History</button>
   </div>
 
   <div class="yona-launcher" id="yona-launcher" aria-label="Open chat" role="button">
@@ -124,9 +131,9 @@
     const logEl    = document.getElementById('log');
     const form     = document.getElementById('form');
     const input    = document.getElementById('input');
+    const clearBtn = document.getElementById('clearHistoryBtn');
 
-    // State for de-duplication
-    let lastId = 0;              // highest row id we've rendered
+    let lastId = 0;
     let openedOnce = false;
 
     function addMsg(role, text){
@@ -148,7 +155,6 @@
     }
     function removeTyping(){ const t=document.getElementById('typing'); if(t) t.remove(); }
 
-    // Fetch and render only messages with id > lastId
     async function fetchNew() {
       const res = await fetch(ENDPOINT_URL, { method:'POST', body: JSON.stringify({ poll:true, since:lastId }) });
       const data = await res.json();
@@ -162,13 +168,9 @@
       return msgs.length;
     }
 
-    // Open chat: load history once (no intervals)
     function openChat(){
       panel.classList.add('open');
-      if (!openedOnce) {
-        openedOnce = true;
-        fetchNew().catch(()=>{});
-      }
+      if (!openedOnce) { openedOnce = true; fetchNew().catch(()=>{}); }
       setTimeout(()=> input.focus(), 50);
     }
     function closeChat(){ panel.classList.remove('open'); }
@@ -176,36 +178,41 @@
     launcher.addEventListener('click', openChat);
     closeBtn.addEventListener('click', closeChat);
 
-    // Send -> show user msg immediately, call backend, then pull ONLY new rows and render them
     form.addEventListener('submit', async (e)=>{
       e.preventDefault();
       const text = input.value.trim(); if(!text) return;
       input.value=''; input.style.height='44px';
 
-      // optimistic user bubble (so it's instant)
+      // optimistic user bubble
       addMsg('me', text);
       addTyping();
 
-      let userRowId = lastId; // remember where we were
       try {
         const res = await fetch(ENDPOINT_URL, { method:'POST', body: JSON.stringify({ message:text }) });
         const data = await res.json().catch(()=> ({}));
 
-        // If backend returns the user's row id, advance lastId to at least that,
-        // so our next fetch only brings the bot row (avoids duplicating the user bubble).
-        if (typeof data.id === 'number') {
-          if (data.id > lastId) lastId = data.id;
-        }
+        // advance cursor to at least the user row id so we don't re-render the user bubble
+        if (typeof data.id === 'number' && data.id > lastId) lastId = data.id;
 
         removeTyping();
-
-        // Now fetch whatever is new (likely just the bot reply row)
-        await fetchNew();
-
+        await fetchNew(); // bring in bot row
       } catch (_) {
         removeTyping();
         addMsg('bot','Oops — could not reach server.');
       }
+    });
+
+    // Clear history button
+    clearBtn.addEventListener('click', async ()=>{
+      if (!confirm('Clear chat history in Google Sheet?')) return;
+      try {
+        await fetch(ENDPOINT_URL, { method:'POST', body: JSON.stringify({ clear:true }) });
+        // Reset local state & UI
+        lastId = 0; openedOnce = false;
+        logEl.innerHTML = '';
+        // Optionally re-open chat and load (empty) history
+        if (!panel.classList.contains('open')) openChat(); else fetchNew().catch(()=>{});
+      } catch (_) { alert('Failed to clear history.'); }
     });
   </script>
 </body>
