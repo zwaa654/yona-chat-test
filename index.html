@@ -15,7 +15,7 @@
     main { flex:1; overflow:auto; padding:16px; scroll-behavior:smooth; }
     .msg { display:flex; margin:8px 0; gap:10px; }
     .msg.me { justify-content:flex-end; }
-    .bubble { max-width:75%; padding:10px 12px; border-radius:14px; line-height:1.35; background:var(--card); border:1px solid var(--line); }
+    .bubble { max-width:75%; padding:10px 12px; border-radius:14px; line-height:1.35; background:var(--card); border:1px solid var(--line); white-space:pre-wrap; }
     .msg.me .bubble { background:var(--bubble); color:var(--bubbleText); border-color:var(--bubble); }
     .typing { display:inline-block; width:36px; }
     .typing span { display:inline-block; width:6px; height:6px; margin:0 2px; background:#cbd5e1; border-radius:50%; animation:b 1.2s infinite ease-in-out; }
@@ -44,16 +44,102 @@
         <textarea id="input" placeholder="Type a message. Press Enter to send (Shift+Enter for new line)"></textarea>
         <button id="send" type="submit">Send</button>
       </form>
-      <div class="hint">This demo runs entirely in your browser. For a real backend, set <code>ENDPOINT_URL</code> below (Option B).</div>
+      <div class="hint">
+        Connected to Google Apps Script. Messages are stored in your Sheet and new replies are polled every 2s.
+      </div>
     </footer>
   </div>
 
   <script>
-    const ENDPOINT_URL = ""; // e.g., "https://yona-cs.yourname.workers.dev/chat"
+    // Your Apps Script Web App URL
+    const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbzIPcXu5kBNFElrRmm-tSHd0Y9Yy8Mny5cCJjnhT7cghY_hVP7o3ipfgYRTTDLtc_PAtw/exec";
 
     const log = document.getElementById('log');
     const form = document.getElementById('form');
     const input = document.getElementById('input');
 
+    // simple in-memory cursor so we only render new rows
+    let lastId = 0;
+
     function addMsg(role, text) {
-      const row = documen
+      const row = document.createElement('div');
+      row.className = 'msg ' + (role === 'me' ? 'me' : 'bot');
+      const b = document.createElement('div');
+      b.className = 'bubble';
+      b.innerText = text;
+      row.appendChild(b);
+      log.appendChild(row);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function addTyping() {
+      const row = document.createElement('div');
+      row.className = 'msg bot'; row.id = 'typing';
+      const b = document.createElement('div');
+      b.className = 'bubble';
+      b.innerHTML = '<span class="typing"><span></span><span></span><span></span></span>';
+      row.appendChild(b);
+      log.appendChild(row);
+      log.scrollTop = log.scrollHeight;
+    }
+    function removeTyping() { const t = document.getElementById('typing'); if (t) t.remove(); }
+
+    input.addEventListener('input', () => {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 160) + 'px';
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+    });
+
+    // Send message -> Apps Script
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = ''; input.style.height = '44px';
+      addMsg('me', text); addTyping();
+
+      try {
+        // IMPORTANT: no custom headers to avoid preflight/CORS issues
+        const res = await fetch(ENDPOINT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ message: text })
+        });
+        const data = await res.json().catch(()=> ({}));
+        removeTyping();
+        if (data && data.reply) addMsg('bot', data.reply);
+        // server also logs both sides; polling picks up anything we missed
+      } catch (err) {
+        removeTyping();
+        addMsg('bot', 'Oops — could not reach server.');
+      }
+    });
+
+    // Poll for new rows (bot messages you add from the Sheet, or any missed ones)
+    async function poll() {
+      try {
+        const res = await fetch(ENDPOINT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ poll: true, since: lastId })
+        });
+        const data = await res.json();
+        const msgs = Array.isArray(data?.messages) ? data.messages : [];
+        for (const m of msgs) {
+          lastId = Math.max(lastId, m.id || 0);
+          // render both user/bot so history is complete
+          addMsg(m.who === 'user' ? 'me' : 'bot', m.text || '');
+        }
+      } catch (_) {
+        // silent; try again on next tick
+      }
+    }
+
+    // initial load + poll every 2s
+    (async () => { await poll(); setInterval(poll, 2000); })();
+
+    // greet
+    addMsg('bot', 'hi! this is live — messages are stored in your Google Sheet. i’ll also show any replies you add from the sheet.');
+  </script>
+</body>
+</html>
