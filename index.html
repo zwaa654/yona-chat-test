@@ -120,7 +120,7 @@
         <textarea id="input" placeholder="Type a message. Press Enter to send (Shift+Enter for new line)"></textarea>
         <button id="send" type="submit">Send</button>
       </form>
-      <div class="hint">AI replies via Apps Script (fast when open, slow poll in background).</div>
+      <div class="hint">AI replies via Apps Script. History loads on open; refresh to see Sheet-sent replies.</div>
     </footer>
   </div>
 
@@ -156,72 +156,34 @@
     }
     function removeTyping(){ const t=document.getElementById('typing'); if(t) t.remove(); }
 
-    // Textarea UX
-    input.addEventListener('input', ()=>{
-      input.style.height='auto';
-      input.style.height=Math.min(input.scrollHeight,160)+'px';
-    });
-    input.addEventListener('keydown', (e)=>{
-      if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); form.requestSubmit(); }
-    });
-
-    // Polling state
-    let lastId = 0, pollTimerFast=null, pollTimerSlow=null, inFlight=false, backoffMs=0;
-    let unseen = 0;
-
-    async function doPoll(){
-      // Skip network if tab hidden (slow timer still runs but returns early)
-      if (inFlight || document.hidden) return;
+    // One-time history load (poll once) when opening the chat
+    let lastId = 0; // track history cursor in case you re-open during same session
+    async function loadHistoryOnce(){
       try{
-        inFlight = true;
         const res = await fetch(ENDPOINT_URL, { method:'POST', body: JSON.stringify({ poll:true, since:lastId }) });
         const data = await res.json();
         const msgs = Array.isArray(data?.messages) ? data.messages : [];
-        let newOnes = 0;
         for(const m of msgs){
           lastId = Math.max(lastId, m.id||0);
-          const role = (m.who === 'user') ? 'me' : 'bot';
-          addMsg(role, m.text || '');
-          if (!panel.classList.contains('open') && role === 'bot') newOnes++;
+          addMsg(m.who === 'user' ? 'me' : 'bot', m.text || '');
         }
-        if (newOnes > 0){
-          unseen += newOnes;
-          launcher.classList.add('unseen'); // red dot when closed
-        }
-        backoffMs = 0;
-      }catch{ backoffMs = Math.min(backoffMs + 2000, 8000); }
-      finally{ inFlight = false; }
+      }catch(_){ /* ignore */ }
     }
 
-    function startFastPolling(){ if(pollTimerFast) return; pollTimerFast = setInterval(()=>{ if(panel.classList.contains('open') && !document.hidden) doPoll(); }, 2000 + backoffMs); }
-    function stopFastPolling(){ if(!pollTimerFast) return; clearInterval(pollTimerFast); pollTimerFast=null; }
-
-    // Slow background polling every 10s even if panel closed (so Sheet/manual replies appear)
-    function startSlowPolling(){ if(pollTimerSlow) return; pollTimerSlow = setInterval(()=>{ if(!panel.classList.contains('open')) doPoll(); }, 10000); }
-    function stopSlowPolling(){ if(!pollTimerSlow) return; clearInterval(pollTimerSlow); pollTimerSlow=null; }
-
-    // Open/close behavior
+    // Open/close behavior (no intervals)
+    let openedBefore = false;
     function openChat(){
       panel.classList.add('open');
-      if (unseen>0){ unseen=0; launcher.classList.remove('unseen'); }
-      if (!document.hidden) doPoll();
-      startFastPolling();
+      // load history only once per page load (so no background polling)
+      if (!openedBefore) { openedBefore = true; loadHistoryOnce(); }
       setTimeout(()=> input.focus(), 50);
     }
-    function closeChat(){ panel.classList.remove('open'); stopFastPolling(); }
+    function closeChat(){ panel.classList.remove('open'); }
 
     launcher.addEventListener('click', openChat);
-    closeBtn.addEventListener('click', closeChat);
+    document.getElementById('yona-close').addEventListener('click', closeChat);
 
-    // Visibility control
-    document.addEventListener('visibilitychange', ()=>{
-      if(document.hidden){ /* slow timer keeps running */ }
-      else { if(panel.classList.contains('open')){ doPoll(); startFastPolling(); } }
-    });
-    window.addEventListener('focus', ()=>{ if(panel.classList.contains('open')) startFastPolling(); });
-    window.addEventListener('blur', ()=>{ /* slow timer keeps going */ });
-
-    // Send -> Apps Script
+    // Send -> Apps Script (and immediately fetch any new rows once)
     form.addEventListener('submit', async (e)=>{
       e.preventDefault();
       const text = input.value.trim(); if(!text) return;
@@ -232,13 +194,14 @@
         const data = await res.json().catch(()=> ({}));
         removeTyping();
         if (data && data.reply) addMsg('bot', data.reply);
+        // Optional single-shot history refresh (still not a loop)
+        await loadHistoryOnce();
       }catch(_){
         removeTyping(); addMsg('bot','Oops — could not reach server.');
       }
     });
 
-    // Boot: slow background polling so Sheet-sent replies appear even if closed
-    startSlowPolling();
+    // Tip: to see sheet-pushed replies, refresh the page (by design per your request)
   </script>
 </body>
 </html>
