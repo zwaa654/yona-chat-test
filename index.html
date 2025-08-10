@@ -6,50 +6,49 @@
   <title>Yona Chat Test</title>
   <style>
     :root{
-      /* Yona-ish palette */
-      --charcoal:#111827; --forest:#184A2C; --oak:#5C3A21;
-      --bg:#0b0f14; --card:#ffffff; --line:#e8eaee; --text:#111827; --muted:#6b7280;
+      --charcoal:#111827; --bg:#0e141b; --card:#ffffff; --line:#e8eaee; --text:#111827;
       --bubble:#111827; --bubbleText:#fff; --shadow:0 12px 30px rgba(0,0,0,.18);
-      --accent:#0f172a; --green:#22c55e; --alert:#ef4444;
+      --green:#22c55e; --alert:#ef4444;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0; font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;
-      color:#e5e7eb; background:radial-gradient(1200px 800px at 70% 10%, rgba(24,74,44,.35), transparent 60%),
-                 radial-gradient(1000px 700px at 10% 90%, rgba(92,58,33,.25), transparent 60%),
-                 linear-gradient(180deg,#0b0f14,#0e141b);
-      position:relative;
+      background:var(--bg); color:#e5e7eb;
     }
-    /* Optional site screenshot background */
-    .bg {
-      position:fixed; inset:0; z-index:-2; background:#0e141b center/cover no-repeat;
-      filter:brightness(.42) blur(2px);
-    }
-    .bg.hidden{ display:none; }
 
-    /* Top page bar (fake site header just for vibe) */
+    /* Real Yona screenshots as background */
+    .bg{ position:fixed; inset:0; z-index:-2; background:#0e141b center/cover no-repeat; filter:brightness(.45) blur(1.5px); }
+    .bg.mobile{ display:none }
+    @media (max-width:640px){
+      .bg.desktop{ display:none }
+      .bg.mobile{ display:block }
+    }
+
+    /* Faux site header to make it feel real */
     .pagebar{
-      position:sticky; top:0; width:100%; display:flex; align-items:center; gap:10px;
-      background:rgba(17,24,39,.65); backdrop-filter: blur(8px);
+      position:sticky; top:0; display:flex; align-items:center; gap:10px;
+      background:rgba(17,24,39,.65); backdrop-filter:blur(8px);
       padding:10px 16px; border-bottom:1px solid rgba(255,255,255,.08);
     }
-    .brand{display:flex; align-items:center; gap:10px}
-    .brand img{height:20px}
-    .brand .fallback{font-weight:800; letter-spacing:.5px}
-    .spacer{flex:1}
-    .pill{color:#cbd5e1; font-size:12px; padding:6px 10px; border:1px solid rgba(255,255,255,.1); border-radius:999px}
+    .brand{ display:flex; align-items:center; gap:10px }
+    .brand img{ height:22px }
+    .brand .fallback{ font-weight:800; letter-spacing:.5px }
+    .spacer{ flex:1 }
+    .pill{ color:#cbd5e1; font-size:12px; padding:6px 10px; border:1px solid rgba(255,255,255,.12); border-radius:999px }
 
-    /* Launcher */
+    /* Launcher button */
     .yona-launcher{
       position:fixed; right:18px; bottom:18px; z-index:9998;
-      display:flex; align-items:center; gap:10px; background:var(--bubble); color:#fff;
-      border:1px solid var(--bubble); box-shadow:var(--shadow); padding:10px 14px; border-radius:24px; cursor:pointer; user-select:none;
+      display:flex; align-items:center; gap:10px;
+      background:var(--bubble); color:#fff; border:1px solid var(--bubble);
+      box-shadow:var(--shadow); padding:10px 14px; border-radius:24px;
+      cursor:pointer; user-select:none;
     }
-    .yona-launcher .dot{width:10px; height:10px; border-radius:50%; background:var(--green)}
-    .yona-launcher .label{font-weight:700}
-    .yona-launcher .badge{width:10px; height:10px; border-radius:50%; background:var(--alert); box-shadow:0 0 0 2px var(--bubble); display:none}
-    .yona-launcher.unseen .badge{display:block}
+    .yona-launcher .dot{ width:10px; height:10px; border-radius:50%; background:var(--green) }
+    .yona-launcher .label{ font-weight:700 }
+    .yona-launcher .badge{ width:10px; height:10px; border-radius:50%; background:var(--alert); box-shadow:0 0 0 2px var(--bubble); display:none }
+    .yona-launcher.unseen .badge{ display:block }
 
     /* Chat panel */
     .yona-chat{
@@ -58,14 +57,14 @@
       background:var(--card); border:1px solid var(--line); border-radius:16px; box-shadow:var(--shadow);
       display:none; overflow:hidden; color:var(--text);
     }
-    .yona-chat.open{ display:flex; flex-direction:column; }
-
+    .yona-chat.open{ display:flex; flex-direction:column }
     .yona-chat header{
       padding:12px 14px; display:flex; align-items:center; gap:10px;
       border-bottom:1px solid var(--line); background:#fff;
     }
     .yona-chat header .dot{ width:10px; height:10px; border-radius:50%; background:var(--green) }
     .yona-chat header h2{ margin:0; font-size:15px }
+    .yona-chat header .ai{ margin-left:6px; font-size:11px; color:#065f46; background:#d1fae5; border:1px solid #a7f3d0; padding:2px 6px; border-radius:999px }
     .yona-chat header .close{ margin-left:auto; border:1px solid #e5e7eb; background:#fff; padding:6px 10px; border-radius:10px; cursor:pointer }
 
     .yona-chat main{ flex:1; overflow:auto; padding:14px; background:#f6f7f9 }
@@ -77,16 +76,15 @@
     .typing{ display:inline-block; width:36px }
     .typing span{ display:inline-block; width:6px; height:6px; margin:0 2px; background:#cbd5e1; border-radius:50%; animation:b 1.2s infinite ease-in-out }
     .typing span:nth-child(2){ animation-delay:0.15s } .typing span:nth-child(3){ animation-delay:0.3s }
-    @keyframes b{ 0%,80%,100%{ transform:scale(.6); opacity:.6 } 40%{ transform:scale(1); opacity:1 } }
+    @keyframes b{0%,80%,100%{ transform:scale(.6); opacity:.6 } 40%{ transform:scale(1); opacity:1 }}
 
     .yona-chat footer{ background:#fff; border-top:1px solid var(--line); padding:10px }
     .bar{ display:flex; gap:8px }
     textarea{ flex:1; resize:none; padding:10px 12px; border-radius:12px; border:1px solid var(--line); font:inherit; min-height:44px; max-height:160px; outline:none }
     button{ padding:10px 14px; border-radius:12px; border:1px solid var(--charcoal); background:var(--charcoal); color:#fff; font-weight:600; cursor:pointer }
     button:disabled{ opacity:.6; cursor:not-allowed }
-    .hint{ font-size:12px; color:#6b7280; padding:6px 2px 0 }
 
-    /* Mobile */
+    /* Mobile: launcher centered & panel full-screen */
     @media (max-width:640px){
       .yona-launcher{ left:50%; right:auto; transform:translateX(-50%); bottom:14px }
       .yona-chat{ right:0; left:0; bottom:0; top:0; width:100vw; height:100dvh; border-radius:0 }
@@ -94,19 +92,18 @@
   </style>
 </head>
 <body>
+  <!-- Backgrounds -->
+  <div class="bg desktop" style="background-image:url('bg-desktop.jpg')"></div>
+  <div class="bg mobile"  style="background-image:url('bg-mobile.jpg')"></div>
 
-  <!-- Optional screenshot background. Upload bg.jpg to your repo root to enable. -->
-  <div class="bg hidden" id="bg"></div>
-
-  <!-- Fake site header so it feels like your page -->
+  <!-- Faux site header -->
   <div class="pagebar">
     <div class="brand">
-      <!-- Upload logo.png (Yona logo) to your repo root for the real mark -->
       <img id="logo" src="logo.png" alt="Yona" onerror="this.style.display='none';document.getElementById('brand-fallback').style.display='block'">
       <div class="fallback" id="brand-fallback" style="display:none">YONA</div>
     </div>
     <div class="spacer"></div>
-    <div class="pill">Proof of concept</div>
+    <div class="pill" id="ai-pill">AI: unknown</div>
   </div>
 
   <!-- Launcher -->
@@ -121,6 +118,7 @@
     <header>
       <div class="dot" aria-hidden="true"></div>
       <h2>Yona Support</h2>
+      <span class="ai" id="ai-chip">…</span>
       <button class="close" id="yona-close" type="button">Close</button>
     </header>
 
@@ -128,146 +126,146 @@
 
     <footer>
       <form class="bar" id="form">
-        <textarea id="input" placeholder="Type a message. Press Enter to send (Shift+Enter for new line)"></textarea>
+        <textarea id="input" placeholder="Type a message. Enter to send (Shift+Enter = new line)"></textarea>
         <button id="send" type="submit">Send</button>
       </form>
-      <div class="hint">Polling your Google Sheet (fast when open, slower in background).</div>
     </footer>
   </div>
 
   <script>
-    // ---------- Config ----------
-    const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbzIPcXu5kBNFElrRmm-tSHd0Y9Yy8Mny5cCJjnhT7cghY_hVP7o3ipfgYRTTDLtc_PAtw/exec";
-    const USE_BG_IMAGE = true;     // set true if you upload bg.jpg to repo
-    const BG_IMAGE_SRC = "bg.jpg"; // upload a screenshot named bg.jpg
-    // ----------------------------
+    // ---- CONFIG ----
+    const GAS_URL      = "https://script.google.com/macros/s/AKfycbzIPcXu5kBNFElrRmm-tSHd0Y9Yy8Mny5cCJjnhT7cghY_hVP7o3ipfgYRTTDLtc_PAtw/exec"; // your Apps Script /exec URL
+    const OLLAMA_URL   = "https://de36ab3b3913.ngrok-free.app"; // <-- paste your current ngrok https URL
+    const OLLAMA_MODEL = "llama3.1:8b"; // change if you pulled a different tag (e.g., "phi3:mini" or "llama3.2:1b")
+    // -----------------
 
-    // Try to enable background screenshot if present
-    (function tryBg(){
-      if (!USE_BG_IMAGE) return;
-      const img = new Image();
-      img.onload = () => document.getElementById('bg').style.backgroundImage = `url('${BG_IMAGE_SRC}')`,
-      img.onerror = () => document.getElementById('bg').classList.add('hidden');
-      img.src = BG_IMAGE_SRC;
-      document.getElementById('bg').classList.remove('hidden');
-    })();
-
-    // Elements
     const launcher = document.getElementById('yona-launcher');
     const panel    = document.getElementById('yona-chat');
     const closeBtn = document.getElementById('yona-close');
-    const log      = document.getElementById('log');
+    const logEl    = document.getElementById('log');
     const form     = document.getElementById('form');
     const input    = document.getElementById('input');
+    const aiChip   = document.getElementById('ai-chip');
+    const aiPill   = document.getElementById('ai-pill');
 
-    // Render helpers
     function addMsg(role, text){
       const row = document.createElement('div');
       row.className = 'msg ' + (role === 'me' ? 'me' : 'bot');
       const b = document.createElement('div');
-      b.className = 'bubble';
-      b.innerText = text;
-      row.appendChild(b);
-      log.appendChild(row);
-      log.scrollTop = log.scrollHeight;
+      b.className = 'bubble'; b.innerText = text;
+      row.appendChild(b); logEl.appendChild(row); logEl.scrollTop = logEl.scrollHeight;
     }
     function addTyping(){
-      const row = document.createElement('div');
-      row.className = 'msg bot'; row.id = 'typing';
+      const row = document.createElement('div'); row.className='msg bot'; row.id='typing';
       const b = document.createElement('div'); b.className='bubble';
       b.innerHTML = '<span class="typing"><span></span><span></span><span></span></span>';
-      row.appendChild(b); log.appendChild(row); log.scrollTop = log.scrollHeight;
+      row.appendChild(b); logEl.appendChild(row); logEl.scrollTop = logEl.scrollHeight;
     }
     function removeTyping(){ const t=document.getElementById('typing'); if(t) t.remove(); }
 
-    // Textarea UX
-    input.addEventListener('input', ()=>{
-      input.style.height='auto';
-      input.style.height=Math.min(input.scrollHeight,160)+'px';
-    });
-    input.addEventListener('keydown', (e)=>{
-      if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); form.requestSubmit(); }
-    });
+    input.addEventListener('input', ()=>{ input.style.height='auto'; input.style.height=Math.min(input.scrollHeight,160)+'px'; });
+    input.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); form.requestSubmit(); }});
 
-    // Polling state
-    let lastId = 0, pollTimerFast=null, pollTimerSlow=null, inFlight=false, backoffMs=0;
-    let unseen = 0;
+    let lastId = 0, pollFast=null, pollSlow=null, inFlight=false, unseen=0, aiOn=null;
 
-    async function doPoll(){
-      if (inFlight || document.hidden) return; // slow timer still runs but we skip network if tab is actually hidden
+    function setAIIndicators(on){
+      aiOn = !!on;
+      aiChip.textContent = aiOn ? 'AI is ON' : 'AI is OFF';
+      aiChip.style.color = aiOn ? '#065f46' : '#991b1b';
+      aiChip.style.background = aiOn ? '#d1fae5' : '#fee2e2';
+      aiChip.style.border = '1px solid ' + (aiOn ? '#a7f3d0' : '#fecaca');
+      aiPill.textContent = 'AI: ' + (aiOn ? 'ON' : 'OFF');
+    }
+
+    async function poll(){
+      if (inFlight) return;
       try{
         inFlight = true;
-        const res = await fetch(ENDPOINT_URL, { method:'POST', body: JSON.stringify({ poll:true, since:lastId }) });
+        const res = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ poll:true, since:lastId }) });
         const data = await res.json();
+        if (typeof data?.ai_on === 'boolean') setAIIndicators(data.ai_on);
         const msgs = Array.isArray(data?.messages) ? data.messages : [];
         let newOnes = 0;
-        for(const m of msgs){
-          lastId = Math.max(lastId, m.id||0);
-          const role = (m.who === 'user') ? 'me' : 'bot';
-          addMsg(role, m.text || '');
+        for (const m of msgs){
+          lastId = Math.max(lastId, m.id || 0);
+          addMsg(m.who === 'user' ? 'me' : 'bot', m.text || '');
           if (!panel.classList.contains('open')) newOnes++;
         }
-        if (newOnes > 0){
-          unseen += newOnes;
-          launcher.classList.add('unseen');
-        }
-        backoffMs = 0;
-      }catch{ backoffMs = Math.min(backoffMs + 2000, 8000); }
-      finally{ inFlight = false; }
+        if (newOnes > 0){ launcher.classList.add('unseen'); unseen += newOnes; }
+      } catch { /* ignore */ }
+      finally { inFlight = false; }
     }
 
-    function startFastPolling(){ if(pollTimerFast) return; pollTimerFast = setInterval(()=>{ if(panel.classList.contains('open') && !document.hidden) doPoll(); }, 2000 + backoffMs); }
-    function stopFastPolling(){ if(!pollTimerFast) return; clearInterval(pollTimerFast); pollTimerFast=null; }
+    function startFast(){ if(pollFast) return; pollFast = setInterval(()=>{ if(panel.classList.contains('open') && !document.hidden) poll(); }, 2000); }
+    function stopFast(){ if(!pollFast) return; clearInterval(pollFast); pollFast=null; }
+    function startSlow(){ if(pollSlow) return; pollSlow = setInterval(()=>{ if(!panel.classList.contains('open')) poll(); }, 10000); }
+    function stopSlow(){ if(!pollSlow) return; clearInterval(pollSlow); pollSlow=null; }
 
-    // Slow background polling every 10s even if panel closed (so Sheet replies pop in)
-    function startSlowPolling(){ if(pollTimerSlow) return; pollTimerSlow = setInterval(()=>{ if(!panel.classList.contains('open')) doPoll(); }, 10000); }
-    function stopSlowPolling(){ if(!pollTimerSlow) return; clearInterval(pollTimerSlow); pollTimerSlow=null; }
-
-    // Open/close behavior
-    function openChat(){
-      panel.classList.add('open');
-      if (unseen>0){ unseen=0; launcher.classList.remove('unseen'); }
-      if (!document.hidden) doPoll();
-      startFastPolling();
-      input.focus();
-    }
-    function closeChat(){ panel.classList.remove('open'); stopFastPolling(); }
-
+    function openChat(){ panel.classList.add('open'); if(unseen>0){ unseen=0; launcher.classList.remove('unseen'); } poll(); startFast(); input.focus(); }
+    function closeChat(){ panel.classList.remove('open'); stopFast(); }
     launcher.addEventListener('click', openChat);
     closeBtn.addEventListener('click', closeChat);
+    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && panel.classList.contains('open')){ poll(); startFast(); } });
 
-    // Visibility control
-    document.addEventListener('visibilitychange', ()=>{
-      if(document.hidden){ /* nothing; slow timer keeps running */ }
-      else { if(panel.classList.contains('open')){ doPoll(); startFastPolling(); } }
-    });
-    window.addEventListener('focus', ()=>{ if(panel.classList.contains('open')) startFastPolling(); });
-    window.addEventListener('blur', ()=>{ /* slow timer keeps going */ });
+    // ---- Local AI via ngrok (Ollama) ----
+    async function callOllama(messages){
+      const res = await fetch(`${OLLAMA_URL}/api/chat`, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ model: OLLAMA_MODEL, messages, stream:false })
+      });
+      const json = await res.json();
+      const text = json?.message?.content || json?.choices?.[0]?.message?.content || '';
+      return text.trim();
+    }
 
-    // Send -> Apps Script
+    // Build short context from current DOM (last ~6 bubbles)
+    function buildLocalContext(){
+      const nodes = Array.from(logEl.querySelectorAll('.msg')).slice(-12);
+      const ctx = [];
+      for (const n of nodes){
+        const role = n.classList.contains('me') ? 'user' : 'assistant';
+        const text = n.querySelector('.bubble')?.innerText || '';
+        ctx.push({ role, content: text });
+      }
+      return ctx;
+    }
+
+    // ---- Send flow ----
     form.addEventListener('submit', async (e)=>{
       e.preventDefault();
       const text = input.value.trim(); if(!text) return;
       input.value=''; input.style.height='44px';
       addMsg('me', text); addTyping();
+
       try{
-        const res = await fetch(ENDPOINT_URL, { method:'POST', body: JSON.stringify({ message:text }) });
-        const data = await res.json().catch(()=> ({}));
+        // 1) Tell GAS (logs user; returns ai_on)
+        const a = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ message:text }) }).then(r=>r.json());
+        if (typeof a?.ai_on === 'boolean') setAIIndicators(a.ai_on);
+
+        // 2) If AI OFF → stop here (you'll reply from the Sheet's Outbox)
+        if (!aiOn){ removeTyping(); return; }
+
+        // 3) AI ON → call your local model via ngrok
+        const context = buildLocalContext();
+        const reply = await callOllama([
+          { role:'system', content:'You are a friendly, concise Yona support agent (eco-friendly, minimal, strong furniture). If unsure, ask a brief clarifying question.' },
+          ...context,
+          { role:'user', content: text }
+        ]) || "…";
+
+        // 4) Show + log bot reply back to GAS so it appears in the Sheet
+        removeTyping(); addMsg('bot', reply);
+        await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ role:'bot', message: reply }) });
+
+      } catch (err){
         removeTyping();
-        if (data && data.reply) addMsg('bot', data.reply);
-      }catch(_){
-        removeTyping(); addMsg('bot','Oops — could not reach server.');
+        addMsg('bot', "Couldn't reach the AI tunnel. Is ngrok running and OLLAMA_URL set?");
       }
     });
 
-    // Boot: start slow background polling so Sheet-sent messages appear even if closed
-    startSlowPolling();
-
-    // Friendly greeting the first time you open
-    let greeted=false;
-    const greet = ()=>{ if(greeted) return; addMsg('bot','hey! this is the Yona proof-of-concept chat. messages are logged to your Google Sheet.'); greeted=true; };
-    launcher.addEventListener('click', greet);
+    // Boot: gentle background polling so Outbox replies pop in even when closed
+    startSlow();
   </script>
 </body>
 </html>
-
