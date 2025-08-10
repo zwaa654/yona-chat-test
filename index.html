@@ -136,136 +136,140 @@
     // ---- CONFIG ----
     const GAS_URL      = "https://script.google.com/macros/s/AKfycbzIPcXu5kBNFElrRmm-tSHd0Y9Yy8Mny5cCJjnhT7cghY_hVP7o3ipfgYRTTDLtc_PAtw/exec"; // your Apps Script /exec URL
     const OLLAMA_URL   = "https://de36ab3b3913.ngrok-free.app"; // <-- paste your current ngrok https URL
-    const OLLAMA_MODEL = "llama3.1:8b"; // change if you pulled a different tag (e.g., "phi3:mini" or "llama3.2:1b")
-    // -----------------
 
-    const launcher = document.getElementById('yona-launcher');
-    const panel    = document.getElementById('yona-chat');
-    const closeBtn = document.getElementById('yona-close');
-    const logEl    = document.getElementById('log');
-    const form     = document.getElementById('form');
-    const input    = document.getElementById('input');
-    const aiChip   = document.getElementById('ai-chip');
-    const aiPill   = document.getElementById('ai-pill');
+  const OLLAMA_MODEL = "llama3.1:8b";
+  // -----------------
 
-    function addMsg(role, text){
-      const row = document.createElement('div');
-      row.className = 'msg ' + (role === 'me' ? 'me' : 'bot');
-      const b = document.createElement('div');
-      b.className = 'bubble'; b.innerText = text;
-      row.appendChild(b); logEl.appendChild(row); logEl.scrollTop = logEl.scrollHeight;
-    }
-    function addTyping(){
-      const row = document.createElement('div'); row.className='msg bot'; row.id='typing';
-      const b = document.createElement('div'); b.className='bubble';
-      b.innerHTML = '<span class="typing"><span></span><span></span><span></span></span>';
-      row.appendChild(b); logEl.appendChild(row); logEl.scrollTop = logEl.scrollHeight;
-    }
-    function removeTyping(){ const t=document.getElementById('typing'); if(t) t.remove(); }
+  const launcher = document.getElementById('yona-launcher');
+  const panel    = document.getElementById('yona-chat');
+  const closeBtn = document.getElementById('yona-close');
+  const logEl    = document.getElementById('log');
+  const form     = document.getElementById('form');
+  const input    = document.getElementById('input');
+  const aiChip   = document.getElementById('ai-chip');
+  const aiPill   = document.getElementById('ai-pill');
 
-    input.addEventListener('input', ()=>{ input.style.height='auto'; input.style.height=Math.min(input.scrollHeight,160)+'px'; });
-    input.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); form.requestSubmit(); }});
+  function addMsg(role, text){
+    const row = document.createElement('div');
+    row.className = 'msg ' + (role === 'me' ? 'me' : 'bot');
+    const b = document.createElement('div');
+    b.className = 'bubble'; b.innerText = text;
+    row.appendChild(b); logEl.appendChild(row); logEl.scrollTop = logEl.scrollHeight;
+  }
+  function addTyping(){
+    const row = document.createElement('div'); row.className='msg bot'; row.id='typing';
+    const b = document.createElement('div'); b.className='bubble';
+    b.innerHTML = '<span class="typing"><span></span><span></span><span></span></span>';
+    row.appendChild(b); logEl.appendChild(row); logEl.scrollTop = logEl.scrollHeight;
+  }
+  function removeTyping(){ const t=document.getElementById('typing'); if(t) t.remove(); }
 
-    let lastId = 0, pollFast=null, pollSlow=null, inFlight=false, unseen=0, aiOn=null;
+  input.addEventListener('input', ()=>{ input.style.height='auto'; input.style.height=Math.min(input.scrollHeight,160)+'px'; });
+  input.addEventListener('keydown', (e)=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); form.requestSubmit(); } });
 
-    function setAIIndicators(on){
-      aiOn = !!on;
-      aiChip.textContent = aiOn ? 'AI is ON' : 'AI is OFF';
-      aiChip.style.color = aiOn ? '#065f46' : '#991b1b';
-      aiChip.style.background = aiOn ? '#d1fae5' : '#fee2e2';
-      aiChip.style.border = '1px solid ' + (aiOn ? '#a7f3d0' : '#fecaca');
-      aiPill.textContent = 'AI: ' + (aiOn ? 'ON' : 'OFF');
-    }
+  let lastId = 0, pollFast=null, pollSlow=null, inFlight=false, unseen=0, aiOn=null;
+  const seen = new Set(); // <-- de-dupe ids we’ve rendered
 
-    async function poll(){
-      if (inFlight) return;
-      try{
-        inFlight = true;
-        const res = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ poll:true, since:lastId }) });
-        const data = await res.json();
-        if (typeof data?.ai_on === 'boolean') setAIIndicators(data.ai_on);
-        const msgs = Array.isArray(data?.messages) ? data.messages : [];
-        let newOnes = 0;
-        for (const m of msgs){
-          lastId = Math.max(lastId, m.id || 0);
-          addMsg(m.who === 'user' ? 'me' : 'bot', m.text || '');
-          if (!panel.classList.contains('open')) newOnes++;
-        }
-        if (newOnes > 0){ launcher.classList.add('unseen'); unseen += newOnes; }
-      } catch { /* ignore */ }
-      finally { inFlight = false; }
-    }
+  function setAIIndicators(on){
+    aiOn = !!on;
+    aiChip.textContent = aiOn ? 'AI is ON' : 'AI is OFF';
+    aiChip.style.color = aiOn ? '#065f46' : '#991b1b';
+    aiChip.style.background = aiOn ? '#d1fae5' : '#fee2e2';
+    aiChip.style.border = '1px solid ' + (aiOn ? '#a7f3d0' : '#fecaca');
+    aiPill.textContent = 'AI: ' + (aiOn ? 'ON' : 'OFF');
+  }
 
-    function startFast(){ if(pollFast) return; pollFast = setInterval(()=>{ if(panel.classList.contains('open') && !document.hidden) poll(); }, 2000); }
-    function stopFast(){ if(!pollFast) return; clearInterval(pollFast); pollFast=null; }
-    function startSlow(){ if(pollSlow) return; pollSlow = setInterval(()=>{ if(!panel.classList.contains('open')) poll(); }, 10000); }
-    function stopSlow(){ if(!pollSlow) return; clearInterval(pollSlow); pollSlow=null; }
-
-    function openChat(){ panel.classList.add('open'); if(unseen>0){ unseen=0; launcher.classList.remove('unseen'); } poll(); startFast(); input.focus(); }
-    function closeChat(){ panel.classList.remove('open'); stopFast(); }
-    launcher.addEventListener('click', openChat);
-    closeBtn.addEventListener('click', closeChat);
-    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && panel.classList.contains('open')){ poll(); startFast(); } });
-
-    // ---- Local AI via ngrok (Ollama) ----
-    async function callOllama(messages){
-      const res = await fetch(`${OLLAMA_URL}/api/chat`, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ model: OLLAMA_MODEL, messages, stream:false })
-      });
-      const json = await res.json();
-      const text = json?.message?.content || json?.choices?.[0]?.message?.content || '';
-      return text.trim();
-    }
-
-    // Build short context from current DOM (last ~6 bubbles)
-    function buildLocalContext(){
-      const nodes = Array.from(logEl.querySelectorAll('.msg')).slice(-12);
-      const ctx = [];
-      for (const n of nodes){
-        const role = n.classList.contains('me') ? 'user' : 'assistant';
-        const text = n.querySelector('.bubble')?.innerText || '';
-        ctx.push({ role, content: text });
+  async function poll(){
+    if (inFlight) return;
+    try{
+      inFlight = true;
+      const res = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ poll:true, since:lastId }) });
+      const data = await res.json();
+      if (typeof data?.ai_on === 'boolean') setAIIndicators(data.ai_on);
+      const msgs = Array.isArray(data?.messages) ? data.messages : [];
+      let newOnes = 0;
+      for (const m of msgs){
+        if (seen.has(m.id)) { lastId = Math.max(lastId, m.id); continue; }
+        lastId = Math.max(lastId, m.id);
+        seen.add(m.id);
+        addMsg(m.who === 'user' ? 'me' : 'bot', m.text || '');
+        if (!panel.classList.contains('open')) newOnes++;
       }
-      return ctx;
-    }
+      if (newOnes > 0){ launcher.classList.add('unseen'); unseen += newOnes; }
+    } catch { /* ignore */ }
+    finally { inFlight = false; }
+  }
 
-    // ---- Send flow ----
-    form.addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const text = input.value.trim(); if(!text) return;
-      input.value=''; input.style.height='44px';
-      addMsg('me', text); addTyping();
+  function startFast(){ if(pollFast) return; pollFast = setInterval(()=>{ if(panel.classList.contains('open') && !document.hidden) poll(); }, 2000); }
+  function stopFast(){ if(!pollFast) return; clearInterval(pollFast); pollFast=null; }
+  function startSlow(){ if(pollSlow) return; pollSlow = setInterval(()=>{ if(!panel.classList.contains('open')) poll(); }, 10000); }
+  function stopSlow(){ if(!pollSlow) return; clearInterval(pollSlow); pollSlow=null; }
 
-      try{
-        // 1) Tell GAS (logs user; returns ai_on)
-        const a = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ message:text }) }).then(r=>r.json());
-        if (typeof a?.ai_on === 'boolean') setAIIndicators(a.ai_on);
+  function openChat(){ panel.classList.add('open'); if(unseen>0){ unseen=0; launcher.classList.remove('unseen'); } poll(); startFast(); input.focus(); }
+  function closeChat(){ panel.classList.remove('open'); stopFast(); }
+  launcher.addEventListener('click', openChat);
+  closeBtn.addEventListener('click', closeChat);
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && panel.classList.contains('open')){ poll(); startFast(); } });
 
-        // 2) If AI OFF → stop here (you'll reply from the Sheet's Outbox)
-        if (!aiOn){ removeTyping(); return; }
-
-        // 3) AI ON → call your local model via ngrok
-        const context = buildLocalContext();
-        const reply = await callOllama([
-          { role:'system', content:'You are a friendly, concise Yona support agent (eco-friendly, minimal, strong furniture). If unsure, ask a brief clarifying question.' },
-          ...context,
-          { role:'user', content: text }
-        ]) || "…";
-
-        // 4) Show + log bot reply back to GAS so it appears in the Sheet
-        removeTyping(); addMsg('bot', reply);
-        await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ role:'bot', message: reply }) });
-
-      } catch (err){
-        removeTyping();
-        addMsg('bot', "Couldn't reach the AI tunnel. Is ngrok running and OLLAMA_URL set?");
-      }
+  async function callOllama(messages){
+    const res = await fetch(`${OLLAMA_URL}/api/chat`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ model: OLLAMA_MODEL, messages, stream:false })
     });
+    const json = await res.json();
+    const text = json?.message?.content || json?.choices?.[0]?.message?.content || '';
+    return text.trim();
+  }
 
-    // Boot: gentle background polling so Outbox replies pop in even when closed
-    startSlow();
-  </script>
+  function buildLocalContext(){
+    const nodes = Array.from(logEl.querySelectorAll('.msg')).slice(-12);
+    const ctx = [];
+    for (const n of nodes){
+      const role = n.classList.contains('me') ? 'user' : 'assistant';
+      const text = n.querySelector('.bubble')?.innerText || '';
+      ctx.push({ role, content: text });
+    }
+    return ctx;
+  }
+
+  form.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const text = input.value.trim(); if(!text) return;
+    input.value=''; input.style.height='44px';
+    addMsg('me', text); addTyping();
+
+    try{
+      // 1) Log user on server and get its row id
+      const a = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ message:text }) }).then(r=>r.json());
+      if (typeof a?.ai_on === 'boolean') setAIIndicators(a.ai_on);
+      if (a?.id){ seen.add(a.id); lastId = Math.max(lastId, a.id); } // prevent echo of our own user message
+
+      // 2) If AI OFF → stop here (you’ll reply from Outbox)
+      if (!aiOn){ removeTyping(); return; }
+
+      // 3) AI ON → call local model via ngrok
+      const context = buildLocalContext();
+      const reply = await callOllama([
+        { role:'system', content:'You are a friendly, concise Yona support agent (eco-friendly, minimal, strong furniture). If unsure, ask a brief clarifying question.' },
+        ...context,
+        { role:'user', content: text }
+      ]) || "…";
+
+      // 4) Show + log bot; capture bot row id to avoid duplicate on next poll
+      removeTyping(); addMsg('bot', reply);
+      const b = await fetch(GAS_URL, { method:'POST', body: JSON.stringify({ role:'bot', message: reply }) }).then(r=>r.json()).catch(()=> ({}));
+      if (b?.id){ seen.add(b.id); lastId = Math.max(lastId, b.id); }
+
+    } catch (err){
+      removeTyping();
+      addMsg('bot', "Couldn't reach the AI tunnel. Is ngrok running and OLLAMA_URL set?");
+    }
+  });
+
+  // Boot: gentle background polling so Outbox replies pop in even when closed
+  startSlow();
+</script>
+
 </body>
 </html>
