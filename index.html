@@ -6,7 +6,6 @@
   <title>Yona Chat Test</title>
   <style>
     :root{
-      /* Yona-ish palette */
       --charcoal:#111827; --forest:#184A2C; --oak:#5C3A21;
       --bg:#0b0f14; --card:#ffffff; --line:#e8eaee; --text:#111827; --muted:#6b7280;
       --bubble:#111827; --bubbleText:#fff; --shadow:0 12px 30px rgba(0,0,0,.18);
@@ -15,12 +14,10 @@
     *{box-sizing:border-box} html,body{height:100%}
     body{ margin:0; font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial; color:#e5e7eb; background:#0e141b; }
 
-    /* Background: uses your screenshots */
     .bg{ position:fixed; inset:0; z-index:-2; background:center/cover no-repeat; filter:brightness(.42) blur(2px); }
     @media (min-width:641px){ .bg{ background-image:url('bg-desktop.jpg'); } }
     @media (max-width:640px){ .bg{ background-image:url('bg-mobile.jpg'); } }
 
-    /* Top bar to simulate site header */
     .pagebar{
       position:sticky; top:0; width:100%; display:flex; align-items:center; gap:10px;
       background:rgba(17,24,39,.65); backdrop-filter: blur(8px);
@@ -32,7 +29,6 @@
     .spacer{flex:1}
     .pill{color:#cbd5e1; font-size:12px; padding:6px 10px; border:1px solid rgba(255,255,255,.1); border-radius:999px}
 
-    /* Launcher */
     .yona-launcher{
       position:fixed; right:18px; bottom:18px; z-index:9998;
       display:flex; align-items:center; gap:10px; background:var(--bubble); color:#fff;
@@ -43,7 +39,6 @@
     .yona-launcher .badge{width:10px; height:10px; border-radius:50%; background:var(--alert); box-shadow:0 0 0 2px var(--bubble); display:none}
     .yona-launcher.unseen .badge{display:block}
 
-    /* Chat panel */
     .yona-chat{
       position:fixed; z-index:9999; right:18px; bottom:18px;
       width:clamp(360px, 28vw, 520px); height:50vh;
@@ -78,7 +73,6 @@
     button:disabled{ opacity:.6; cursor:not-allowed }
     .hint{ font-size:12px; color:#6b7280; padding:6px 2px 0 }
 
-    /* Mobile: full-screen chat; launcher centered */
     @media (max-width:640px){
       .yona-launcher{ left:50%; right:auto; transform:translateX(-50%); bottom:14px }
       .yona-chat{ right:0; left:0; bottom:0; top:0; width:100vw; height:100dvh; border-radius:0 }
@@ -88,7 +82,6 @@
 <body>
   <div class="bg"></div>
 
-  <!-- Fake site header (logo optional; shows YONA text if logo not present) -->
   <div class="pagebar">
     <div class="brand">
       <img id="logo" src="logo.png" alt="Yona" onerror="this.style.display='none';document.getElementById('brand-fallback').style.display='block'">
@@ -98,14 +91,12 @@
     <div class="pill">Proof of concept</div>
   </div>
 
-  <!-- Launcher -->
   <div class="yona-launcher" id="yona-launcher" aria-label="Open chat" role="button">
     <div class="dot" aria-hidden="true"></div>
     <div class="label">Chat</div>
     <div class="badge" aria-hidden="true"></div>
   </div>
 
-  <!-- Chat panel -->
   <div class="yona-chat" id="yona-chat" aria-live="polite" aria-label="Yona chat">
     <header>
       <div class="dot" aria-hidden="true"></div>
@@ -125,10 +116,8 @@
   </div>
 
   <script>
-    // ---- Config: your Apps Script Web App URL ----
     const ENDPOINT_URL = "https://script.google.com/macros/s/AKfycbzIPcXu5kBNFElrRmm-tSHd0Y9Yy8Mny5cCJjnhT7cghY_hVP7o3ipfgYRTTDLtc_PAtw/exec";
 
-    // Elements
     const launcher = document.getElementById('yona-launcher');
     const panel    = document.getElementById('yona-chat');
     const closeBtn = document.getElementById('yona-close');
@@ -136,7 +125,10 @@
     const form     = document.getElementById('form');
     const input    = document.getElementById('input');
 
-    // Render helpers
+    // State for de-duplication
+    let lastId = 0;              // highest row id we've rendered
+    let openedOnce = false;
+
     function addMsg(role, text){
       const row = document.createElement('div');
       row.className = 'msg ' + (role === 'me' ? 'me' : 'bot');
@@ -156,52 +148,65 @@
     }
     function removeTyping(){ const t=document.getElementById('typing'); if(t) t.remove(); }
 
-    // One-time history load (poll once) when opening the chat
-    let lastId = 0; // track history cursor in case you re-open during same session
-    async function loadHistoryOnce(){
-      try{
-        const res = await fetch(ENDPOINT_URL, { method:'POST', body: JSON.stringify({ poll:true, since:lastId }) });
-        const data = await res.json();
-        const msgs = Array.isArray(data?.messages) ? data.messages : [];
-        for(const m of msgs){
-          lastId = Math.max(lastId, m.id||0);
+    // Fetch and render only messages with id > lastId
+    async function fetchNew() {
+      const res = await fetch(ENDPOINT_URL, { method:'POST', body: JSON.stringify({ poll:true, since:lastId }) });
+      const data = await res.json();
+      const msgs = Array.isArray(data?.messages) ? data.messages : [];
+      for (const m of msgs) {
+        if ((m.id || 0) > lastId) {
           addMsg(m.who === 'user' ? 'me' : 'bot', m.text || '');
+          lastId = m.id;
         }
-      }catch(_){ /* ignore */ }
+      }
+      return msgs.length;
     }
 
-    // Open/close behavior (no intervals)
-    let openedBefore = false;
+    // Open chat: load history once (no intervals)
     function openChat(){
       panel.classList.add('open');
-      // load history only once per page load (so no background polling)
-      if (!openedBefore) { openedBefore = true; loadHistoryOnce(); }
+      if (!openedOnce) {
+        openedOnce = true;
+        fetchNew().catch(()=>{});
+      }
       setTimeout(()=> input.focus(), 50);
     }
     function closeChat(){ panel.classList.remove('open'); }
 
     launcher.addEventListener('click', openChat);
-    document.getElementById('yona-close').addEventListener('click', closeChat);
+    closeBtn.addEventListener('click', closeChat);
 
-    // Send -> Apps Script (and immediately fetch any new rows once)
+    // Send -> show user msg immediately, call backend, then pull ONLY new rows and render them
     form.addEventListener('submit', async (e)=>{
       e.preventDefault();
       const text = input.value.trim(); if(!text) return;
       input.value=''; input.style.height='44px';
-      addMsg('me', text); addTyping();
-      try{
+
+      // optimistic user bubble (so it's instant)
+      addMsg('me', text);
+      addTyping();
+
+      let userRowId = lastId; // remember where we were
+      try {
         const res = await fetch(ENDPOINT_URL, { method:'POST', body: JSON.stringify({ message:text }) });
         const data = await res.json().catch(()=> ({}));
+
+        // If backend returns the user's row id, advance lastId to at least that,
+        // so our next fetch only brings the bot row (avoids duplicating the user bubble).
+        if (typeof data.id === 'number') {
+          if (data.id > lastId) lastId = data.id;
+        }
+
         removeTyping();
-        if (data && data.reply) addMsg('bot', data.reply);
-        // Optional single-shot history refresh (still not a loop)
-        await loadHistoryOnce();
-      }catch(_){
-        removeTyping(); addMsg('bot','Oops — could not reach server.');
+
+        // Now fetch whatever is new (likely just the bot reply row)
+        await fetchNew();
+
+      } catch (_) {
+        removeTyping();
+        addMsg('bot','Oops — could not reach server.');
       }
     });
-
-    // Tip: to see sheet-pushed replies, refresh the page (by design per your request)
   </script>
 </body>
 </html>
