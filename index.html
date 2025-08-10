@@ -1,0 +1,159 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.6">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!doctype html&gt;</p>
+<p class="p1">&lt;html lang="en"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta charset="utf-8" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta name="viewport" content="width=device-width,initial-scale=1" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;title&gt;Yona Chat Test&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>:root { --bg:#f6f7f9; --card:#ffffff; --line:#e8eaee; --text:#111827; --muted:#6b7280; --accent:#0f172a; --bubble:#111827; --bubbleText:#fff; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>* { box-sizing:border-box; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>body { margin:0; background:var(--bg); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; color:var(--text); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.wrap { max-width:720px; margin:0 auto; display:flex; flex-direction:column; height:100dvh; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>header { padding:16px; display:flex; gap:12px; align-items:center; border-bottom:1px solid var(--line); background:var(--card); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>header .dot { width:10px; height:10px; border-radius:50%; background:#22c55e; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>header h1 { font-size:16px; margin:0; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>main { flex:1; overflow:auto; padding:16px; scroll-behavior:smooth; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.msg { display:flex; margin:8px 0; gap:10px; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.msg.me { justify-content:flex-end; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.bubble { max-width:75%; padding:10px 12px; border-radius:14px; line-height:1.35; background:var(--card); border:1px solid var(--line); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.msg.me .bubble { background:var(--bubble); color:var(--bubbleText); border-color:var(--bubble); }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.meta { font-size:12px; color:var(--muted); margin-top:4px; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.typing { display:inline-block; width:36px; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.typing span { display:inline-block; width:6px; height:6px; margin:0 2px; background:#cbd5e1; border-radius:50%; animation:b 1.2s infinite ease-in-out; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.typing span:nth-child(2){ animation-delay:0.15s } .typing span:nth-child(3){ animation-delay:0.3s }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>@keyframes b { 0%,80%,100%{ transform:scale(0.6); opacity:.6 } 40%{ transform:scale(1); opacity:1 } }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>footer { background:var(--card); border-top:1px solid var(--line); padding:10px; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.bar { display:flex; gap:8px; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>textarea { flex:1; resize:none; padding:10px 12px; border-radius:12px; border:1px solid var(--line); font:inherit; min-height:44px; max-height:160px; outline:none; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>button { padding:10px 14px; border-radius:12px; border:1px solid #111827; background:#111827; color:#fff; font-weight:600; cursor:pointer; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>button:disabled { opacity:.6; cursor:not-allowed; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>.hint { font-size:12px; color:var(--muted); padding:6px 2px 0; }</p>
+<p class="p1"><span class="Apple-converted-space">    </span>a { color:#0ea5e9; text-decoration:none; } a:hover { text-decoration:underline; }</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div class="wrap"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;header&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="dot"&gt;&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;h1&gt;Yona Chat (Test)&lt;/h1&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/header&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;main id="log" aria-live="polite"&gt;&lt;/main&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;footer&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;form class="bar" id="form"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;textarea id="input" placeholder="Type a message. Press Enter to send (Shift+Enter for new line)"&gt;&lt;/textarea&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>&lt;button id="send" type="submit"&gt;Send&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;/form&gt;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>&lt;div class="hint"&gt;This demo runs entirely in your browser. For a real backend, set &lt;code&gt;ENDPOINT_URL&lt;/code&gt; below (Option B).&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/footer&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>// If you deploy a backend in Option B, set this to your endpoint URL:</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const ENDPOINT_URL = ""; // e.g., "https://yona-cs.yourname.workers.dev/chat"</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>const log = document.getElementById('log');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const form = document.getElementById('form');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const input = document.getElementById('input');</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const send = document.getElementById('send');</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>function addMsg(role, text) {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const row = document.createElement('div');</p>
+<p class="p1"><span class="Apple-converted-space">      </span>row.className = 'msg ' + (role === 'me' ? 'me' : 'bot');</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>const b = document.createElement('div');</p>
+<p class="p1"><span class="Apple-converted-space">      </span>b.className = 'bubble';</p>
+<p class="p1"><span class="Apple-converted-space">      </span>b.innerText = text;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>row.appendChild(b);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>log.appendChild(row);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>log.scrollTop = log.scrollHeight;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>function addTyping() {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const row = document.createElement('div');</p>
+<p class="p1"><span class="Apple-converted-space">      </span>row.className = 'msg bot';</p>
+<p class="p1"><span class="Apple-converted-space">      </span>row.id = 'typing';</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const b = document.createElement('div');</p>
+<p class="p1"><span class="Apple-converted-space">      </span>b.className = 'bubble';</p>
+<p class="p1"><span class="Apple-converted-space">      </span>b.innerHTML = '&lt;span class="typing"&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;';</p>
+<p class="p1"><span class="Apple-converted-space">      </span>row.appendChild(b);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>log.appendChild(row);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>log.scrollTop = log.scrollHeight;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>function removeTyping() {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const t = document.getElementById('typing');</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if (t) t.remove();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>input.addEventListener('input', () =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>input.style.height = 'auto';</p>
+<p class="p1"><span class="Apple-converted-space">      </span>input.style.height = Math.min(input.scrollHeight, 160) + 'px';</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>input.addEventListener('keydown', (e) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if (e.key === 'Enter' &amp;&amp; !e.shiftKey) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>e.preventDefault();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>form.requestSubmit();</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>form.addEventListener('submit', async (e) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>e.preventDefault();</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const text = input.value.trim();</p>
+<p class="p1"><span class="Apple-converted-space">      </span>if (!text) return;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>input.value = '';</p>
+<p class="p1"><span class="Apple-converted-space">      </span>input.style.height = '44px';</p>
+<p class="p1"><span class="Apple-converted-space">      </span>addMsg('me', text);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>addTyping();</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>try {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>if (ENDPOINT_URL) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const res = await fetch(ENDPOINT_URL, {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>method: 'POST',</p>
+<p class="p1"><span class="Apple-converted-space">            </span>headers: { 'Content-Type': 'application/json' },</p>
+<p class="p1"><span class="Apple-converted-space">            </span>body: JSON.stringify({ message: text })</p>
+<p class="p1"><span class="Apple-converted-space">          </span>});</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const data = await res.json();</p>
+<p class="p1"><span class="Apple-converted-space">          </span>removeTyping();</p>
+<p class="p1"><span class="Apple-converted-space">          </span>addMsg('bot', (data.reply || 'No reply field in response.'));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>// Local “dummy bot” so you can test visuals with no backend.</p>
+<p class="p1"><span class="Apple-converted-space">          </span>await new Promise(r =&gt; setTimeout(r, 600));</p>
+<p class="p1"><span class="Apple-converted-space">          </span>removeTyping();</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const canned = [</p>
+<p class="p1"><span class="Apple-converted-space">            </span>"hey! i'm here — what do you want to test?",</p>
+<p class="p1"><span class="Apple-converted-space">            </span>"copy that. sending a pretend reply.",</p>
+<p class="p1"><span class="Apple-converted-space">            </span>"this is a local bot response. hook a backend to make it real.",</p>
+<p class="p1"><span class="Apple-converted-space">            </span>"✅ message received. looks good on my end."</p>
+<p class="p1"><span class="Apple-converted-space">          </span>];</p>
+<p class="p1"><span class="Apple-converted-space">          </span>addMsg('bot', canned[Math.floor(Math.random()*canned.length)]);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>} catch (err) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>removeTyping();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>addMsg('bot', 'Oops — I couldn’t reach the server. (Once you add an endpoint, check CORS and URL.)');</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>// Greet</p>
+<p class="p1"><span class="Apple-converted-space">    </span>addMsg('bot', 'hi! this is a test chat. type anything and hit enter.');</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>
